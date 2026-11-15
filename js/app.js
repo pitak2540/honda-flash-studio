@@ -425,6 +425,9 @@
     $('#mtSelInfo').textContent = n ? ('เลือก ' + n + ' ช่อง' + (n === 1 ? ' (' + fmtCell(mt.vals[mt.sel.r1][mt.sel.c1]) + ')' : '')) : 'ทั้งตาราง';
     $('#mtSelClear').hidden = !n;
     if (n === 1) $('#mtSetVal').value = fmtCell(mt.vals[mt.sel.r1][mt.sel.c1]);
+    // in maximised mode the toolbar pops up only while something is selected
+    if (document.body.classList.contains('tune-max')) { document.body.classList.toggle('tools-open', n > 0);
+      const fb = document.getElementById('mtFloatTools'); if (fb) fb.classList.toggle('on', n > 0); }
   }
   function setSel(a, b) { mt.sel = normSel(a, b || a); paintSel(); }
   function clearSel() { mt.sel = null; paintSel(); }
@@ -543,18 +546,25 @@
 
   /* ---------- fullscreen landscape tuning mode ---------- */
   async function enterTuneFull() {
-    document.body.classList.add('tune-full'); $('#mtFull').classList.add('on'); $('#mtFull').textContent = '✕ ออก';
+    document.body.classList.add('tune-full', 'tune-max'); document.body.classList.remove('tools-open');
+    $('#mtFull').classList.add('on'); $('#mtFloat').hidden = false; syncFloat();
     try { if (document.documentElement.requestFullscreen && !document.fullscreenElement) await document.documentElement.requestFullscreen({ navigationUI: 'hide' }); } catch {}
     try { if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape'); } catch {}
     setTimeout(() => { if (mt.view === '3d') { sizeCanvas(); render3D(); } }, 350);
   }
   async function exitTuneFull() {
-    document.body.classList.remove('tune-full'); $('#mtFull').classList.remove('on'); $('#mtFull').textContent = '⤢ แนวนอน';
+    document.body.classList.remove('tune-full', 'tune-max', 'tools-open'); $('#mtFull').classList.remove('on'); $('#mtFloat').hidden = true;
     try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch {}
     try { if (document.fullscreenElement) await document.exitFullscreen(); } catch {}
     setTimeout(() => { if (mt.view === '3d') { sizeCanvas(); render3D(); } }, 350);
   }
+  function syncFloat() { $('#mtFloatView').textContent = mt.view === '3d' ? '2D' : '3D';
+    $('#mtFloatTools').classList.toggle('on', document.body.classList.contains('tools-open')); }
   $('#mtFull').addEventListener('click', () => { document.body.classList.contains('tune-full') ? exitTuneFull() : enterTuneFull(); });
+  $('#mtFloatExit').addEventListener('click', exitTuneFull);
+  $('#mtFloatTools').addEventListener('click', () => { document.body.classList.toggle('tools-open'); syncFloat(); });
+  $('#mtFloatView').addEventListener('click', () => { setView(mt.view === '3d' ? '2d' : '3d'); syncFloat(); });
+  $('#mtFloatSave').addEventListener('click', () => $('#mtSave').click());
   document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && document.body.classList.contains('tune-full')) exitTuneFull(); });
   window.addEventListener('resize', () => { if (mt.view === '3d' && mt.tb) { sizeCanvas(); render3D(); } });
 

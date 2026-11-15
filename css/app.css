@@ -222,6 +222,18 @@ body.tune-full .mt-3d{height:calc(100vh - 230px)}
 body.tune-full .mt-tools2{margin-top:8px}
 body.tune-full .mt-tools2 .btn{padding:9px 12px;font-size:13px}
 body.tune-full #mtMsg{margin-top:6px}
+/* maximised table: nothing but the grid + floating pills */
+body.tune-max #mtEditor{padding:4px 6px;border:0;box-shadow:none;border-radius:0;background:transparent}
+body.tune-max #main{padding:4px 4px 0}
+body.tune-max #mtEditor .card-h,body.tune-max #mtTableSel,body.tune-max .mt-stat,body.tune-max .mt-tools2,body.tune-max #mtMsg,body.tune-max .mt-3dhint,body.tune-max .mt-legend{display:none!important}
+body.tune-max .mt-selbar{display:none;position:fixed;left:8px;right:8px;top:6px;z-index:70;margin:0;box-shadow:0 12px 30px rgba(21,24,33,.25)}
+body.tune-max.tools-open .mt-selbar{display:block}
+body.tune-max .mt-gridwrap{max-height:calc(100vh - 12px);border-radius:8px}
+body.tune-max .mt-3d{height:calc(100vh - 14px)}
+.mt-float{position:fixed;right:10px;bottom:10px;z-index:80;display:flex;gap:8px}
+.mt-float button{width:46px;height:46px;border-radius:50%;border:0;background:rgba(21,24,33,.88);color:#fff;font-size:18px;font-weight:800;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.3);font-family:inherit}
+.mt-float button.exit{background:var(--red)}
+.mt-float button.on{background:var(--red)}
 /* general landscape: let the table use the width */
 @media (orientation:landscape) and (max-height:520px){
   #main{max-width:none}

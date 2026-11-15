@@ -172,7 +172,7 @@
             <button class="tbtn active" data-view="2d">2D</button>
             <button class="tbtn" data-view="3d">3D</button>
           </span>
-          <button id="mtFull" class="fullbtn" title="เต็มจอแนวนอน">⤢ แนวนอน</button>
+          <button id="mtFull" class="fullbtn" title="ขยายตารางเต็มจอ (แนวนอน)">⛶ เต็มจอตาราง</button>
         </span>
       </div>
       <select id="mtTableSel" class="select" style="margin-bottom:10px"></select>
@@ -307,6 +307,14 @@
     <button class="sheetitem" data-go="settings">⚙️ ตั้งค่า</button>
     <button class="sheetitem" data-go="diag">🩺 วิเคราะห์/DTC</button>
   </div>
+</div>
+
+<!-- floating controls for full-screen table mode -->
+<div id="mtFloat" class="mt-float" hidden>
+  <button id="mtFloatTools" title="เครื่องมือแก้ค่า">🛠</button>
+  <button id="mtFloatView" title="สลับ 2D/3D">3D</button>
+  <button id="mtFloatSave" title="บันทึกลงไฟล์">💾</button>
+  <button id="mtFloatExit" class="exit" title="ออกจากเต็มจอ">✕</button>
 </div>
 
 <!-- toast / popup -->
