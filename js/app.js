@@ -23,6 +23,7 @@
     else if (prevScreen === 'flashecu' && !state.flashing) resumeLive();
     if (screen === 'diag') buildGauges();
     if (screen === 'maptune') onEnterMap();
+    else if (document.body.classList.contains('tune-full')) exitTuneFull();
     prevScreen = screen;
   }
   let prevScreen = 'overview';
@@ -393,20 +394,70 @@
     for (let r = 0; r < mt.rows; r++) {
       html += '<tr><td class="rowh">' + (mt.yLabels[r] != null ? mt.yLabels[r] : r) + '</td>';
       for (let c = 0; c < mt.cols; c++) { const v = mt.vals[r][c];
-        html += `<td class="cell" style="background:${heat(v, mn, mx)}"><input data-r="${r}" data-c="${c}" value="${fmtCell(v)}" inputmode="decimal"></td>`; }
+        html += `<td class="cell" data-r="${r}" data-c="${c}" style="background:${heat(v, mn, mx)}"><span class="cv">${fmtCell(v)}</span></td>`; }
       html += '</tr>';
     }
-    const g = $('#mtGrid'); g.innerHTML = html;
-    g.querySelectorAll('input').forEach(inp => { inp.addEventListener('change', () => {
-      const r = +inp.dataset.r, c = +inp.dataset.c; let nv = parseFloat(inp.value);
-      if (isNaN(nv)) { inp.value = fmtCell(mt.vals[r][c]); return; } mt.vals[r][c] = nv; recolor(); }); });
+    $('#mtGrid').innerHTML = html;
+    paintSel();
   }
   function recolor() {
     if (mt.view === '3d') { render3D(); return; }
     const { mn, mx } = gridExtent();
-    $('#mtGrid').querySelectorAll('input').forEach(inp => { const r = +inp.dataset.r, c = +inp.dataset.c; const v = mt.vals[r][c];
-      inp.value = fmtCell(v); inp.parentElement.style.background = heat(v, mn, mx); });
+    $('#mtGrid').querySelectorAll('td.cell').forEach(td => { const r = +td.dataset.r, c = +td.dataset.c; const v = mt.vals[r][c];
+      td.firstChild.textContent = fmtCell(v); td.style.background = heat(v, mn, mx); });
   }
+
+  /* ---------- cell selection (tap / long-press+drag) ---------- */
+  mt.sel = null; // {r1,c1,r2,c2} normalised
+  function normSel(a, b) { return { r1: Math.min(a.r, b.r), c1: Math.min(a.c, b.c), r2: Math.max(a.r, b.r), c2: Math.max(a.c, b.c) }; }
+  function selCount() { return mt.sel ? (mt.sel.r2 - mt.sel.r1 + 1) * (mt.sel.c2 - mt.sel.c1 + 1) : 0; }
+  function forTargets(fn) { // apply fn(r,c) to selection, or whole table when nothing selected
+    if (!mt.tb) return;
+    if (mt.sel) { for (let r = mt.sel.r1; r <= mt.sel.r2; r++) for (let c = mt.sel.c1; c <= mt.sel.c2; c++) fn(r, c); }
+    else { for (let r = 0; r < mt.rows; r++) for (let c = 0; c < mt.cols; c++) fn(r, c); }
+  }
+  function paintSel() {
+    const g = $('#mtGrid'); if (!g) return;
+    g.querySelectorAll('td.cell.sel, td.cell.anchor').forEach(td => td.classList.remove('sel', 'anchor'));
+    if (mt.sel) { for (let r = mt.sel.r1; r <= mt.sel.r2; r++) for (let c = mt.sel.c1; c <= mt.sel.c2; c++) {
+      const td = g.querySelector(`td.cell[data-r="${r}"][data-c="${c}"]`); if (td) td.classList.add('sel'); } }
+    const n = selCount();
+    $('#mtSelInfo').textContent = n ? ('เลือก ' + n + ' ช่อง' + (n === 1 ? ' (' + fmtCell(mt.vals[mt.sel.r1][mt.sel.c1]) + ')' : '')) : 'ทั้งตาราง';
+    $('#mtSelClear').hidden = !n;
+    if (n === 1) $('#mtSetVal').value = fmtCell(mt.vals[mt.sel.r1][mt.sel.c1]);
+  }
+  function setSel(a, b) { mt.sel = normSel(a, b || a); paintSel(); }
+  function clearSel() { mt.sel = null; paintSel(); }
+  function cellAt(x, y) { const el = document.elementFromPoint(x, y); const td = el && el.closest ? el.closest('td.cell') : null;
+    return td ? { r: +td.dataset.r, c: +td.dataset.c } : null; }
+  (function () {
+    const g = $('#mtGrid'), wrap = $('#mt2dWrap'); if (!g) return;
+    let anchor = null, selecting = false, lpTimer = null, t0 = null, moved = false;
+    const vib = () => { try { navigator.vibrate && navigator.vibrate(15); } catch {} };
+    // mouse (desktop): press-drag selects immediately
+    g.addEventListener('mousedown', e => { if (e.button !== 0) return; const c = cellAt(e.clientX, e.clientY); if (!c) return;
+      anchor = c; selecting = true; setSel(anchor); e.preventDefault(); });
+    window.addEventListener('mousemove', e => { if (!selecting || !anchor) return; const c = cellAt(e.clientX, e.clientY); if (c) setSel(anchor, c); });
+    window.addEventListener('mouseup', () => { if (selecting) { selecting = false; if (selCount() === 1) $('#mtSetVal').focus(); } });
+    // touch: quick tap = single cell · long-press (220ms) then drag = range · swipe = scroll
+    g.addEventListener('touchstart', e => { if (e.touches.length !== 1) return; const t = e.touches[0];
+      t0 = { x: t.clientX, y: t.clientY, time: Date.now() }; moved = false; selecting = false;
+      clearTimeout(lpTimer);
+      lpTimer = setTimeout(() => { const c = cellAt(t0.x, t0.y); if (!c) return; anchor = c; selecting = true; wrap.classList.add('selecting'); setSel(anchor); vib(); }, 220);
+    }, { passive: true });
+    g.addEventListener('touchmove', e => { if (!t0) return; const t = e.touches[0];
+      if (selecting) { e.preventDefault(); const c = cellAt(t.clientX, t.clientY); if (c && anchor) setSel(anchor, c); return; }
+      if (Math.hypot(t.clientX - t0.x, t.clientY - t0.y) > 8) { moved = true; clearTimeout(lpTimer); }
+    }, { passive: false });
+    const endTouch = e => { clearTimeout(lpTimer); wrap.classList.remove('selecting');
+      if (selecting) { selecting = false; return; }
+      if (t0 && !moved && Date.now() - t0.time < 220) { const c = cellAt(t0.x, t0.y); if (c) { setSel(c); vib(); } }
+      t0 = null; };
+    g.addEventListener('touchend', endTouch); g.addEventListener('touchcancel', endTouch);
+  })();
+  $('#mtSelClear').addEventListener('click', clearSel);
+  $('#mtSetBtn').addEventListener('click', () => { const v = parseFloat($('#mtSetVal').value); if (isNaN(v) || !mt.tb) return;
+    forTargets((r, c) => { mt.vals[r][c] = v; }); recolor(); });
 
   /* ---------- 3D surface ---------- */
   function setView(v) {
@@ -481,14 +532,31 @@
   })();
 
   /* ---- bulk + save ---- */
-  $('#mtApplyPct').addEventListener('click', () => { if (!mt.tb) return; const p = (parseFloat($('#mtPct').value) || 100) / 100;
-    for (let r = 0; r < mt.rows; r++) for (let c = 0; c < mt.cols; c++) mt.vals[r][c] *= p; recolor(); });
-  $('#mtPlus').addEventListener('click', () => { if (!mt.tb) return; const d = parseFloat($('#mtDelta').value) || 0;
-    for (let r = 0; r < mt.rows; r++) for (let c = 0; c < mt.cols; c++) mt.vals[r][c] += d; recolor(); });
-  $('#mtMinus').addEventListener('click', () => { if (!mt.tb) return; const d = parseFloat($('#mtDelta').value) || 0;
-    for (let r = 0; r < mt.rows; r++) for (let c = 0; c < mt.cols; c++) mt.vals[r][c] -= d; recolor(); });
+  $('#mtApplyPct').addEventListener('click', () => { const p = (parseFloat($('#mtPct').value) || 100) / 100;
+    forTargets((r, c) => { mt.vals[r][c] *= p; }); recolor(); paintSel(); });
+  $('#mtPlus').addEventListener('click', () => { const d = parseFloat($('#mtDelta').value) || 0;
+    forTargets((r, c) => { mt.vals[r][c] += d; }); recolor(); paintSel(); });
+  $('#mtMinus').addEventListener('click', () => { const d = parseFloat($('#mtDelta').value) || 0;
+    forTargets((r, c) => { mt.vals[r][c] -= d; }); recolor(); paintSel(); });
   $('#mtReset').addEventListener('click', () => { if (!mt.tb) return;
-    mt.vals = mt.orig.map(row => row.slice()); recolor(); });
+    mt.vals = mt.orig.map(row => row.slice()); recolor(); paintSel(); });
+
+  /* ---------- fullscreen landscape tuning mode ---------- */
+  async function enterTuneFull() {
+    document.body.classList.add('tune-full'); $('#mtFull').classList.add('on'); $('#mtFull').textContent = '✕ ออก';
+    try { if (document.documentElement.requestFullscreen && !document.fullscreenElement) await document.documentElement.requestFullscreen({ navigationUI: 'hide' }); } catch {}
+    try { if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape'); } catch {}
+    setTimeout(() => { if (mt.view === '3d') { sizeCanvas(); render3D(); } }, 350);
+  }
+  async function exitTuneFull() {
+    document.body.classList.remove('tune-full'); $('#mtFull').classList.remove('on'); $('#mtFull').textContent = '⤢ แนวนอน';
+    try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch {}
+    try { if (document.fullscreenElement) await document.exitFullscreen(); } catch {}
+    setTimeout(() => { if (mt.view === '3d') { sizeCanvas(); render3D(); } }, 350);
+  }
+  $('#mtFull').addEventListener('click', () => { document.body.classList.contains('tune-full') ? exitTuneFull() : enterTuneFull(); });
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && document.body.classList.contains('tune-full')) exitTuneFull(); });
+  window.addEventListener('resize', () => { if (mt.view === '3d' && mt.tb) { sizeCanvas(); render3D(); } });
 
   function applyToBin() { if (!mt.tb) return;
     for (let r = 0; r < mt.rows; r++) for (let c = 0; c < mt.cols; c++) HFXdf.writeValue(state.bin, mt.tb, r, c, mt.vals[r][c]); }

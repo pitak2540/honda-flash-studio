@@ -190,9 +190,43 @@ body{font-family:'Prompt',system-ui,sans-serif;background:var(--bg);color:var(--
 .mt-grid th{position:sticky;top:0;background:#15181d;color:#fff;font-weight:700;padding:5px 4px;font-size:10px;z-index:2}
 .mt-grid th.corner{left:0;z-index:3}
 .mt-grid td.rowh{position:sticky;left:0;background:#2a2f37;color:#fff;font-weight:700;font-size:10px;padding:4px 6px;z-index:1}
-.mt-grid td.cell{padding:0;border:1px solid #eef0f3;min-width:40px}
-.mt-grid td.cell input{width:46px;border:0;background:transparent;text-align:center;font-family:inherit;font-size:12px;font-weight:600;padding:6px 2px;color:#15181d}
-.mt-grid td.cell input:focus{outline:2px solid var(--red);background:#fff}
+.mt-grid td.cell{padding:0;border:1px solid #eef0f3;min-width:44px;position:relative;cursor:cell}
+.mt-grid td.cell .cv{display:block;min-width:46px;text-align:center;font-family:inherit;font-size:12px;font-weight:600;padding:7px 3px;color:#15181d;pointer-events:none}
+.mt-grid td.cell.sel{box-shadow:inset 0 0 0 2px var(--red);filter:saturate(1.35) brightness(.97)}
+.mt-grid td.cell.anchor{box-shadow:inset 0 0 0 3px #b0060c}
+.mt-grid{user-select:none;-webkit-user-select:none}
+.mt-gridwrap{touch-action:pan-x pan-y;overscroll-behavior:contain}
+.mt-gridwrap.selecting{touch-action:none}
+/* selection toolbar */
+.mt-selbar{position:sticky;top:0;z-index:4;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;box-shadow:0 6px 18px rgba(21,24,33,.06)}
+.mt-selbar .sel-info{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
+.mt-selbar .sel-info b{font-size:13px;color:var(--red)}
+.mt-selbar .sel-info small{font-size:11px;color:var(--muted);line-height:1.35}
+.mt-selbar .sel-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.mt-selbar .inp-sm{width:78px}
+.fullbtn{border:1px solid var(--line);background:#fff;color:var(--ink);font-family:inherit;font-size:12px;font-weight:700;padding:7px 10px;border-radius:10px;cursor:pointer;white-space:nowrap}
+.fullbtn.on{background:var(--red);color:#fff;border-color:var(--red)}
+/* fullscreen landscape tuning mode */
+body.tune-full .appbar,body.tune-full .bottomnav,body.tune-full #moreSheet{display:none!important}
+body.tune-full #main{max-width:none;padding:8px 10px 10px}
+body.tune-full .screen[data-screen="maptune"]>.card:not(#mtEditor){display:none}
+body.tune-full #mtEditor{padding:10px 12px;border-radius:12px}
+body.tune-full #mtEditor .card-h{margin-bottom:8px;font-size:14px}
+body.tune-full #mtTableSel{margin-bottom:6px;padding:8px 10px;font-size:13px}
+body.tune-full .mt-stat{margin-bottom:6px;font-size:11px}
+body.tune-full .mt-selbar .sel-info small{display:none}
+body.tune-full .mt-selbar{padding:6px 10px;margin-bottom:6px}
+body.tune-full .mt-selbar .sel-info{flex-direction:row;align-items:center;gap:10px;margin-bottom:4px}
+body.tune-full .mt-gridwrap{max-height:calc(100vh - 215px)}
+body.tune-full .mt-3d{height:calc(100vh - 230px)}
+body.tune-full .mt-tools2{margin-top:8px}
+body.tune-full .mt-tools2 .btn{padding:9px 12px;font-size:13px}
+body.tune-full #mtMsg{margin-top:6px}
+/* general landscape: let the table use the width */
+@media (orientation:landscape) and (max-height:520px){
+  #main{max-width:none}
+  .mt-gridwrap{max-height:62vh}
+}
 
 /* license */
 .lic-card{border-color:#f3d0d2;background:linear-gradient(160deg,#fff,#fff6f6)}

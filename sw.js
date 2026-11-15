@@ -1,6 +1,6 @@
 'use strict';
 /* Honda Flash Studio Mobile — service worker (offline app shell + runtime bin cache) */
-const CACHE = 'hfs-v2';
+const CACHE = 'hfs-v3';
 const SHELL = [
   './', './index.html', './css/app.css',
   './js/link.js', './js/ecu.js', './js/flash.js', './js/xdf.js', './js/license.js', './js/app.js',
