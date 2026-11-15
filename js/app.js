@@ -138,7 +138,7 @@
     const id = st.ecmId || '';
     const code = boxPart(id) || st.fileCode || '';
     if (st.connected) {
-      setPill('on', '✓ เชื่อมต่อแล้ว');
+      setPill('on', '✓ เชื่อมต่อแล้ว' + (Link.kind === 'openport' ? ' · OpenPort' : ''));
       $('#connectBtn').hidden = true; $('#disconnectBtn').hidden = false;
       $('#cc-state').textContent = 'เชื่อมต่อแล้ว';
       $('#cc-sub').textContent = 'ค้างการเชื่อมต่อจนกว่าจะถอดสาย' + (id ? ' · กล่อง ' + id : '');
