@@ -8,7 +8,7 @@
 (function (global) {
   const L = global.HFLink;
   const sleep = ms => new Promise(r => setTimeout(r, ms));
-  const b = arr => Uint8Array.of.apply(null, arr);
+  const b = arr => Uint8Array.from(arr);
   function u8eq(a, c) { if (a.length !== c.length) return false; for (let i = 0; i < a.length; i++) if (a[i] !== c[i]) return false; return true; }
 
   class Flasher extends EventTarget {
@@ -153,12 +153,10 @@
     async startFlash(bin, { startOffsetHex, checksumOffsetHex } = {}) {
       if (this._isFlashing) { this._emit('error', 'กำลังแฟลชอยู่'); return false; }
       if (!L.isOpen) { this._emit('error', 'ยังไม่เชื่อมต่อ ECM'); this._emit('complete', false); return false; }
-      // ---- SAFETY GUARD: block flashing an image that is not a complete, valid ROM size ----
-      const VALID_SIZES = [49152, 57344, 65536, 98304, 131072, 262144, 393216, 524288, 1048576];
-      if (!bin || !VALID_SIZES.includes(bin.length)) {
-        this._emit('error', 'ยกเลิก: ไฟล์ขนาด ' + (bin ? (bin.length / 1024).toFixed(1) : 0) + 'KB ไม่ใช่ภาพ ROM เต็มที่ถูกต้อง — ห้ามแฟลช (กันกล่องพังจากไฟล์ครึ่งเดียว/ดูดมาไม่ครบ)');
-        this._emit('complete', false); return false;
-      }
+      if (!bin || !bin.length) { this._emit('error', 'ไม่มีไฟล์ให้แฟลช'); this._emit('complete', false); return false; }
+      // no size guard (by request): any file is allowed — just tell the operator what is being written
+      const KNOWN_SIZES = [49152, 57344, 65536, 98304, 131072, 262144, 393216, 524288, 1048576];
+      this._emit('status', 'ไฟล์ ' + (bin.length / 1024).toFixed(1) + ' KB' + (KNOWN_SIZES.includes(bin.length) ? '' : ' (ขนาดไม่มาตรฐาน — ตรวจให้แน่ใจว่าเป็นไฟล์เต็มของกล่องรุ่นนี้)'));
       let binModel = ''; for (let i = 1; i < 16; i++) { const c = bin[i]; if (c >= 32 && c < 127) binModel += String.fromCharCode(c); else break; }
       if (binModel.length >= 3) this._emit('status', '⚠ รุ่นในไฟล์: "' + binModel + '" — ต้องตรงกับกล่อง (ECM ID: ' + this.ecmId + ') ถ้าไม่ตรง กล่องจะพัง');
       const recovery = this.ecmId.length >= 4 && this.ecmId.endsWith('0000');
